@@ -10,7 +10,65 @@
          online at your node.js address under /socket.io/socket.io.js 
          You can disable that on the server if desired
     -->
+	<script src="/socket.io/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.34/browser.min.js"></script>
+	<script src="/messages.js"></script>
+	<script type="text/babel">
+
+		console.log(Message);
+
+		let autoIncrmentId = 0;
+		const sentMessages = {};
+
+		const connectedSocket = (e) => {
+			const message = document.querySelector('#message');
+			const chat = document.querySelector('#chat');
+			const socket = io.connect();
+
+			socket.on('connect', () => {
+				console.log('connecting');
+
+				let user = document.querySelector('#username').value;
+
+				if(!user) {
+					user = 'unknown';
+				}
+
+				socket.emit('join', {name: user});
+			});
+
+			socket.on('msg', (data) => {
+				if(sentMessages[data.clientId]){
+
+				}
+
+				chat.textContent += `${data.name}: ${data.msg}\n`;
+				console.log(data);
+			});
+
+			const sendMessage = (e) => {
+				const msg = message.value;
+
+				console.log(`sending message: ${msg}`);
+				if(msg) {
+					const newMessage = {msg: message.value, clientId: autoIncrmentId++};
+					sentMessages[newMessage.clientId] = newMessage;
+					socket.emit('msg', newMessage);
+				}
+			};
+
+			const send = document.querySelector('#send');
+			send.addEventListener('click', sendMessage);
+		};
+
+		const init = () => {
+			const connect = document.querySelector('#connect');
+			connect.addEventListener('click', connectedSocket);
+		};
+
+		window.onload = init;
+
+	</script>
 	<style>
 		textarea {
 			display: block;
@@ -19,7 +77,7 @@
 	</style>
 </head>
 <body>
-	<label for="user">Username:</label>
+	<label for="username">Username:</label>
 	<input id="username" name="user" type="text"/>
 	<input id="connect" type='button' value='connect'/>
 	</br>
