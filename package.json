@@ -1,0 +1,31 @@
+{
+  "name": "rtm-websockets-chat",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node ./src/server.js",
+    "build": "tsc -p ./",
+    "pretest": "tslint \"src/**/*.ts\"",
+    "test": "echo \"Tests complete\"",
+    "postinstall": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://thunder033@github.com/thunder033/rtm-websockets-chat.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/thunder033/rtm-websockets-chat/issues"
+  },
+  "homepage": "https://github.com/thunder033/rtm-websockets-chat#readme",
+  "dependencies": {
+    "@types/node": "^7.0.4",
+    "typescript": "^2.1.5"
+  },
+  "devDependencies": {
+    "grunt": "^1.0.1",
+    "tslint": "^4.4.2"
+  }
+}
