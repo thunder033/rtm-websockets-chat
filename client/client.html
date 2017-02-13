@@ -57,6 +57,15 @@
 				send.disabled = false;
 			});
 
+			socket.on('history', (data) => {
+			    if(!(data instanceof Array)) {
+			        return;
+				}
+
+				messages.push.apply(messages, data);
+                chat.innerHTML = getChatContent(messages);
+			});
+
 			socket.on('msg', (data) => {
 			    let msg = null;
 				if(sentMessages[data.clientId]){

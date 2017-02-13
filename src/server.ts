@@ -71,6 +71,10 @@ class ChatServer {
         return this.connections.length;
     }
 
+    public getHistory(): Message[] {
+        return this.messages;
+    }
+
     public sendMessage(message: Message) {
         this.messages.push(message);
         io.sockets.in(this.roomName).emit('msg', message);
@@ -125,6 +129,7 @@ class User {
 
         console.log(`${this.name} joined`);
         this.socket.emit('msg', new Message(`You joined ${room}`));
+        this.socket.emit('history', this.server.getHistory());
 
     }
 
