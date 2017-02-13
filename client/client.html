@@ -12,38 +12,77 @@
     -->
 	<script src="/socket.io/socket.io.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.34/browser.min.js"></script>
+	<script>
+		// hack in exports so things don't break
+		window.exports = window.exports || {};
+	</script>
 	<script src="/messages.js"></script>
 	<script type="text/babel">
 
-		console.log(Message);
-
 		let autoIncrmentId = 0;
+		let user = '';
 		const sentMessages = {};
+		const messages = [];
+
+		function getMessageLine(message) {
+            const statusSymbols = [0, 'P','D','S','E'];
+            const status = message.name === user ? '(' + statusSymbols[message.status] + ')' : '';
+		    return `${message.name}: ${message.msg} ${status}\n`;
+		}
+
+		function getChatContent(messages) {
+		    return messages.reduce((content, message) => {
+		        return content + getMessageLine(message);
+			}, '');
+		}
 
 		const connectedSocket = (e) => {
 			const message = document.querySelector('#message');
 			const chat = document.querySelector('#chat');
+            const send = document.querySelector('#send');
 			const socket = io.connect();
 
 			socket.on('connect', () => {
 				console.log('connecting');
 
-				let user = document.querySelector('#username').value;
+				const userField = document.querySelector('#username');
+				user = userField.value;
 
 				if(!user) {
 					user = 'unknown';
 				}
 
 				socket.emit('join', {name: user});
+				document.querySelector('#connect-container').style.display = 'none';
+				send.disabled = false;
 			});
 
 			socket.on('msg', (data) => {
+			    let msg = null;
 				if(sentMessages[data.clientId]){
-
+				    msg = sentMessages[data.clientId];
+				    Object.assign(msg, data);
+				}
+				else {
+				    msg = new ClientMessage(data);
 				}
 
-				chat.textContent += `${data.name}: ${data.msg}\n`;
+                messages.push(msg);
+
+                chat.innerHTML = getChatContent(messages);
+				socket.emit('delivered', msg);
 				console.log(data);
+			});
+
+			socket.on('delivered', (data) => {
+                if(sentMessages[data.clientId]){
+                    console.log(`set message ${data.id} to status ${MessageStatus.Delivered}`);
+                    sentMessages[data.clientId].setStatus(MessageStatus.Delivered);
+                    delete sentMessages[data.clientId];
+                }
+
+                console.log(messages);
+                chat.innerHTML = getChatContent(messages);
 			});
 
 			const sendMessage = (e) => {
@@ -51,13 +90,18 @@
 
 				console.log(`sending message: ${msg}`);
 				if(msg) {
-					const newMessage = {msg: message.value, clientId: autoIncrmentId++};
+				    const newMessage = new ClientMessage({
+				        name: user,
+				        msg: message.value,
+						clientId: autoIncrmentId++});
+
+				    chat.innerHTML += getMessageLine(newMessage);
 					sentMessages[newMessage.clientId] = newMessage;
 					socket.emit('msg', newMessage);
 				}
 			};
 
-			const send = document.querySelector('#send');
+
 			send.addEventListener('click', sendMessage);
 		};
 
@@ -70,21 +114,23 @@
 
 	</script>
 	<style>
-		textarea {
-			display: block;
-			background-color: #EEEEEE;
+		#chat {
+			width: 40em;
+			height: 30em;
 		}
 	</style>
 </head>
 <body>
+<div id="connect-container">
 	<label for="username">Username:</label>
 	<input id="username" name="user" type="text"/>
 	<input id="connect" type='button' value='connect'/>
-	</br>
+</div>
+<pre id="chat"></pre>
+<div>
 	<label for="message">Message:</label>
 	<input id="message" name="message" type="text"/>
-	<input id="send" type="button" value="send" />
-	
-	<textarea id="chat" rows="20" cols="40" readonly> </textarea>
+	<input id="send" type="button" value="send" disabled />
+</div>
 </body>
 </html>

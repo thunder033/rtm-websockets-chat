@@ -5,7 +5,7 @@
 
 import * as fs from 'fs';
 import * as Http from 'http';
-import {Message, ClientMessage} from './messages';
+import {Message, ClientMessage, MessageStatus} from './messages';
 import {Server} from 'net';
 import Socket = SocketIO.Socket;
 import * as socketio from 'socket.io';
@@ -38,14 +38,29 @@ const io = socketio(app);
 
 class ChatServer {
     private connections: User[];
+    private messages: Message[];
     private roomName: string = 'room1';
 
     constructor() {
         this.connections = [];
+        this.messages = [];
     }
 
     public registerConnection(socket) {
         this.connections.push(new User(socket, this));
+    }
+
+    public getMessage(id: number): Message {
+        let msg: Message = null;
+        //console.log(JSON.stringify(this.messages, null, 2));
+        for(let i: number = this.messages.length - 1; i >= 0; i--) {
+            if (this.messages[i].getId() === id) {
+                msg = this.messages[i];
+                break;
+            }
+        }
+
+        return msg;
     }
 
     public getRoom(): string {
@@ -55,6 +70,11 @@ class ChatServer {
     public getUserCount(): number {
         return this.connections.length;
     }
+
+    public sendMessage(message: Message) {
+        this.messages.push(message);
+        io.sockets.in(this.roomName).emit('msg', message);
+    };
 
     /**
      * Removes a user from the room and indicates if there were successfully removed
@@ -87,6 +107,7 @@ class User {
         socket.on('join', this.onJoin.bind(this));
         socket.on('msg', this.onMsg.bind(this));
         socket.on('disconnect', this.onDisconnect.bind(this));
+        socket.on('delivered', this.onDelivered.bind(this));
     }
 
     private onJoin(data) {
@@ -107,11 +128,22 @@ class User {
 
     }
 
+    private onDelivered(data): void {
+        console.log(`message ${data.id} was delivered`);
+        if(data.name === 'server'){
+            return;
+        }
+
+        server.getMessage(data.id).setStatus(MessageStatus.Delivered);
+        this.socket.broadcast.to(this.server.getRoom()).emit('delivered', data);
+    }
+
     private onMsg(data) {
         console.log(`received message from ${this.name}`);
         const message =  new ClientMessage({msg: data.msg, clientId: data.clientId, name: this.name});
-        this.socket.broadcast.to(this.server.getRoom()).emit('msg', message);
-        this.socket.emit('msg', message);
+        server.sendMessage(message);
+        //this.socket.broadcast.to(this.server.getRoom()).emit('msg', message);
+        //this.socket.emit('msg', message);
     }
 
     private onDisconnect(data) {
