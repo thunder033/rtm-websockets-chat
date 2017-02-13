@@ -9,6 +9,7 @@ import * as Http from 'http';
 import {Server} from 'net';
 import Socket = SocketIO.Socket;
 import * as socketio from 'socket.io';
+import Timer = NodeJS.Timer;
 
 const port: number = parseInt(process.env.PORT || process.env.NODE_PORT || 3000, 10);
 
@@ -41,9 +42,17 @@ class ChatServer {
     private messages: Message[];
     private roomName: string = 'room1';
 
+    private readonly STATUS_INTERVAL_TIME: number = 30000;
+    private statusInterval: Timer;
+
     constructor() {
         this.connections = [];
         this.messages = [];
+
+        // Send a status update to each client at a set interval
+        this.statusInterval = setInterval(() => {
+            this.broadcastStatus();
+        }, this.STATUS_INTERVAL_TIME);
     }
 
     public registerConnection(socket) {
@@ -78,6 +87,7 @@ class ChatServer {
     public sendMessage(message: Message) {
         this.messages.push(message);
         io.sockets.in(this.roomName).emit('msg', message);
+        this.broadcastStatus();
     };
 
     /**
@@ -86,6 +96,7 @@ class ChatServer {
      * @returns {boolean}
      */
     public removeUser(targetUser: User): boolean {
+        this.broadcastStatus();
         return this.connections.some((user: User, i: number) => {
             if (targetUser === user) {
                 this.connections.splice(i, 1);
@@ -93,6 +104,14 @@ class ChatServer {
             }
 
             return false;
+        });
+    }
+
+    public broadcastStatus() {
+        const users: Object[] = this.connections.map((user) => user.getUserData());
+        io.sockets.in(this.roomName).emit('status', {
+            roomName: this.roomName,
+            users,
         });
     }
 }
@@ -103,10 +122,12 @@ class User {
     private name: string;
     private room: string;
     private server: ChatServer;
+    private lastActive: Date;
 
     constructor(socket: Socket, server: ChatServer) {
         this.server = server;
         this.socket = socket;
+        this.lastActive = null;
 
         socket.on('join', this.onJoin.bind(this));
         socket.on('msg', this.onMsg.bind(this));
@@ -114,11 +135,44 @@ class User {
         socket.on('delivered', this.onDelivered.bind(this));
     }
 
+    public getUserData(): Object {
+        return {
+            lastActive: this.getElapsedInactive(),
+            name: this.name,
+            room: this.server.getRoom(),
+        };
+    }
+
+    /**
+     * Returns a user-friendly string indicating the elapsed time since the user was active
+     * @returns {string}
+     */
+    private getElapsedInactive(): string {
+        if (!this.lastActive) {
+           return '';
+        }
+
+        const UNIT_SIZES: number[] = [1000, 60, 60, 24];
+        const UNIT_LABELS: string[] = ['s', 'm', 'h', 'd'];
+
+        let timeUnit: number = (new Date()).getTime() - this.lastActive.getTime();
+        let unitIndex: number = 0;
+
+        // find the largest unit we can use with a non-decimal time
+        while (timeUnit / UNIT_SIZES[unitIndex] > 1) {
+            timeUnit /= UNIT_SIZES[unitIndex++];
+        }
+
+        // round the time unit and use the correct time unit label
+        return unitIndex > 1 ? `${~~timeUnit}${UNIT_LABELS[unitIndex - 1]}` : 'now';
+    }
+
     private onJoin(data) {
         const joinMsg = new Message(`There are ${this.server.getUserCount()} users online`);
         const room = this.server.getRoom();
 
         this.name = data.name;
+        this.lastActive = new Date();
         this.socket.emit('msg', joinMsg);
         this.socket.join(room);
 
@@ -130,6 +184,7 @@ class User {
         console.log(`${this.name} joined`);
         this.socket.emit('msg', new Message(`You joined ${room}`));
         this.socket.emit('history', this.server.getHistory());
+        this.server.broadcastStatus();
 
     }
 
@@ -144,6 +199,7 @@ class User {
     }
 
     private onMsg(data) {
+        this.lastActive = new Date();
         console.log(`received message from ${this.name}`);
         const message =  new ClientMessage({msg: data.msg, clientId: data.clientId, name: this.name});
         server.sendMessage(message);
@@ -155,6 +211,7 @@ class User {
         this.server.removeUser(this);
         this.socket.broadcast.to(this.server.getRoom()).emit('msg', new Message(`${this.name} has left the room`));
     }
+
 }
 
 const server = new ChatServer();

@@ -47,6 +47,9 @@
             const send = document.querySelector('#send');
 			const socket = io.connect();
 
+			const roomName = document.querySelector('#roomName');
+			const usersList = document.querySelector('#users');
+
 			socket.on('connect', () => {
 				console.log('connecting');
 
@@ -71,8 +74,7 @@
 			        return;
 				}
 
-				messages.length = 0;
-				messages.push.apply(messages, data);
+				messages.unshift.apply(messages, data.reverse());
                 updateChat(chat, messages);
 			});
 
@@ -108,6 +110,25 @@
 
                 console.log(messages);
                 updateChat(chat, messages);
+			});
+
+			socket.on('status', (data) =>{
+				roomName.innerHTML = data.roomName;
+
+				usersList.innerHTML = '';
+				data.users.forEach((user) => {
+					const li = document.createElement('li');
+					const inactiveElapsed = user.lastActive === 'now' ? '' : `<span class='inactive-elapsed'>${user.lastActive}</span>`;
+
+					li.className = 'user';
+					li.innerHTML = `${user.name} ${inactiveElapsed}`;
+
+					if(user.lastActive === 'now') {
+						li.className += ' active';
+					}
+
+					usersList.appendChild(li);
+				});
 			});
 
 			const sendMessage = (e) => {
@@ -159,6 +180,9 @@
 			overflow-y: scroll;
 			border: 1px #ccc solid;
 			padding: .3em;
+			display: inline-block;
+			vertical-align: top;
+			margin: 0 0 .3em;
 		}
 
 		#message {
@@ -170,6 +194,45 @@
 			width: 4em;
 			padding: .3em;
 		}
+
+		#status {
+			display: inline-block;
+			height: 20em;
+			width: 15em;
+			border: 1px #ccc solid;
+			padding: .3em;
+			vertical-align: top;
+		}
+
+		#roomName {
+			font-size: 1.2em;
+			margin: .3em;
+		}
+
+		#users {
+			padding: .3em;
+		}
+
+		#users li.user {
+			list-style: none;
+		}
+
+		li.user.active:after {
+			content: '';
+			background: #44ee44;
+			box-sizing: border-box;
+			display: inline-block;
+			vertical-align: middle;
+			height: .5em;
+			width: .5em;
+			border-radius: .5em;
+		}
+
+		.inactive-elapsed {
+			font-size: .8em;
+			color: #777;
+			margin-left: .5em;
+		}
 	</style>
 </head>
 <body>
@@ -179,6 +242,10 @@
 	<input id="connect" type='button' value='connect'/>
 </div>
 <pre id="chat"></pre>
+<div id="status">
+	<h3 id="roomName"></h3>
+	<ul id="users"></ul>
+</div>
 <div>
 	<input id="message" name="message" type="text" disabled placeholder="Type a message..."/>
 	<input id="send" type="button" value="send" disabled />

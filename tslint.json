@@ -21,6 +21,7 @@
     "no-empty-interface": true,
     "no-string-throw": true,
     "prefer-const": true,
+    "no-bitwise": false,
     "quotemark": true,
     "no-console": false,
     "no-reference": false,
