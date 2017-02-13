@@ -36,6 +36,11 @@
 			}, '');
 		}
 
+		function updateChat(chat, messages) {
+            chat.innerHTML = getChatContent(messages);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
 		const connectedSocket = (e) => {
 			const message = document.querySelector('#message');
 			const chat = document.querySelector('#chat');
@@ -55,6 +60,7 @@
 				socket.emit('join', {name: user});
 				document.querySelector('#connect-container').style.display = 'none';
 				send.disabled = false;
+				message.disabled = false;
 			});
 
 			socket.on('history', (data) => {
@@ -63,7 +69,7 @@
 				}
 
 				messages.push.apply(messages, data);
-                chat.innerHTML = getChatContent(messages);
+                updateChat(chat, messages);
 			});
 
 			socket.on('msg', (data) => {
@@ -78,7 +84,7 @@
 
                 messages.push(msg);
 
-                chat.innerHTML = getChatContent(messages);
+                updateChat(chat, messages);
 				socket.emit('delivered', msg);
 				console.log(data);
 			});
@@ -91,7 +97,7 @@
                 }
 
                 console.log(messages);
-                chat.innerHTML = getChatContent(messages);
+                updateChat(chat, messages);
 			});
 
 			const sendMessage = (e) => {
@@ -127,9 +133,26 @@
 
 	</script>
 	<style>
+		html, body {
+			font: 100% Arial, Sans;
+		}
+
 		#chat {
 			width: 40em;
 			height: 30em;
+			overflow-y: scroll;
+			border: 1px #ccc solid;
+			padding: .3em;
+		}
+
+		#message {
+			width: 35em;
+			padding: .3em;
+		}
+
+		#send {
+			width: 4em;
+			padding: .3em;
 		}
 	</style>
 </head>
@@ -141,8 +164,7 @@
 </div>
 <pre id="chat"></pre>
 <div>
-	<label for="message">Message:</label>
-	<input id="message" name="message" type="text"/>
+	<input id="message" name="message" type="text" disabled placeholder="Type a message..."/>
 	<input id="send" type="button" value="send" disabled />
 </div>
 </body>
