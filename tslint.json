@@ -11,6 +11,10 @@
       "static-before-instance",
       "variables-before-functions"
     ],
+    "ordered-imports": [true, {
+      "import-sources-order": "any",
+      "named-imports-order": "case-insensitive"
+    }],
     "no-trailing-whitespace": false,
     "no-angle-bracket-type-assertion": true,
     "no-default-export": true,

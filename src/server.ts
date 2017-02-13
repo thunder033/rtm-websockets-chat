@@ -3,9 +3,9 @@
  * Created by gjrwcs on 2/7/2017.
  */
 
+import {ClientMessage, Message, MessageStatus} from './messages';
 import * as fs from 'fs';
 import * as Http from 'http';
-import {Message, ClientMessage, MessageStatus} from './messages';
 import {Server} from 'net';
 import Socket = SocketIO.Socket;
 import * as socketio from 'socket.io';
@@ -17,7 +17,7 @@ const index: Buffer = fs.readFileSync(`${__dirname}/../client/client.html`);
 const messages: Buffer = fs.readFileSync(`${__dirname}/../src/messages.js`);
 
 const onRequest = (request: Http.IncomingMessage, response: Http.ServerResponse): void => {
-    switch(request.url) {
+    switch (request.url) {
         case '/':
         case '/client.html':
             response.writeHead(200, {'Content-Type': 'text/html'});
@@ -52,8 +52,8 @@ class ChatServer {
 
     public getMessage(id: number): Message {
         let msg: Message = null;
-        //console.log(JSON.stringify(this.messages, null, 2));
-        for(let i: number = this.messages.length - 1; i >= 0; i--) {
+        // console.log(JSON.stringify(this.messages, null, 2));
+        for (let i: number = this.messages.length - 1; i >= 0; i--) {
             if (this.messages[i].getId() === id) {
                 msg = this.messages[i];
                 break;
@@ -130,7 +130,7 @@ class User {
 
     private onDelivered(data): void {
         console.log(`message ${data.id} was delivered`);
-        if(data.name === 'server'){
+        if (data.name === 'server') {
             return;
         }
 
@@ -142,8 +142,8 @@ class User {
         console.log(`received message from ${this.name}`);
         const message =  new ClientMessage({msg: data.msg, clientId: data.clientId, name: this.name});
         server.sendMessage(message);
-        //this.socket.broadcast.to(this.server.getRoom()).emit('msg', message);
-        //this.socket.emit('msg', message);
+        // this.socket.broadcast.to(this.server.getRoom()).emit('msg', message);
+        // this.socket.emit('msg', message);
     }
 
     private onDisconnect(data) {

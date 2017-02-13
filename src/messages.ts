@@ -6,7 +6,7 @@ export enum MessageStatus {
     Sent = 1,
     Delivered,
     Seen,
-    Failed
+    Failed,
 }
 
 export class Message {
@@ -41,7 +41,7 @@ export class ClientMessage extends Message {
     constructor(params: {
         name: string,
         msg: string,
-        clientId: number
+        clientId: number,
     }) {
         super(params.msg, params.name);
 
