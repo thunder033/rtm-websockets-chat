@@ -63,25 +63,33 @@
 				message.disabled = false;
 			});
 
+            /**
+			 * When the server sends the message history, replace the contents of the local message history
+             */
 			socket.on('history', (data) => {
 			    if(!(data instanceof Array)) {
 			        return;
 				}
 
+				messages.length = 0;
 				messages.push.apply(messages, data);
                 updateChat(chat, messages);
 			});
 
 			socket.on('msg', (data) => {
 			    let msg = null;
+			    // check if this is a message we sent and was received by the server
 				if(sentMessages[data.clientId]){
+				    // If so whatever data the server sends back is the "correct" version
 				    msg = sentMessages[data.clientId];
 				    Object.assign(msg, data);
 				}
 				else {
+				    // If the message was from another user, create a new object for it
 				    msg = new ClientMessage(data);
 				}
 
+				// Add the message to the local history
                 messages.push(msg);
 
                 updateChat(chat, messages);
@@ -89,9 +97,11 @@
 				console.log(data);
 			});
 
+			// If one of our messages was delivered
 			socket.on('delivered', (data) => {
+			    // check if it's still pending
                 if(sentMessages[data.clientId]){
-                    console.log(`set message ${data.id} to status ${MessageStatus.Delivered}`);
+                    // mark the message as delivered
                     sentMessages[data.clientId].setStatus(MessageStatus.Delivered);
                     delete sentMessages[data.clientId];
                 }
@@ -106,12 +116,18 @@
 				if(msg) {
 				    const newMessage = new ClientMessage({
 				        name: user,
-				        msg: message.value,
+				        msg: msg,
 						clientId: autoIncrmentId++});
 
+				    // Temporarily append the message to the chat content
+					// FIXME: if another user sends a message before this one is delivered, it will disappear
 				    chat.innerHTML += getMessageLine(newMessage);
+				    chat.scrollTop = chat.scrollHeight;
+
+				    // Save a reference to the sent message
 					sentMessages[newMessage.clientId] = newMessage;
 					socket.emit('msg', newMessage);
+					// Clear out message field
 					message.value = '';
 				}
 			};
