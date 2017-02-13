@@ -88,7 +88,6 @@
 			const sendMessage = (e) => {
 				const msg = message.value;
 
-				console.log(`sending message: ${msg}`);
 				if(msg) {
 				    const newMessage = new ClientMessage({
 				        name: user,
@@ -98,11 +97,16 @@
 				    chat.innerHTML += getMessageLine(newMessage);
 					sentMessages[newMessage.clientId] = newMessage;
 					socket.emit('msg', newMessage);
+					message.value = '';
 				}
 			};
 
-
 			send.addEventListener('click', sendMessage);
+			message.addEventListener('keydown', function(e){
+			    if(e.which == 13) {
+			        sendMessage(e);
+				}
+			});
 		};
 
 		const init = () => {
