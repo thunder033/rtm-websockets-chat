@@ -16,6 +16,7 @@ const port: number = parseInt(process.env.PORT || process.env.NODE_PORT || 3000,
 // read the client file into memory
 const index: Buffer = fs.readFileSync(`${__dirname}/../client/client.html`);
 const messages: Buffer = fs.readFileSync(`${__dirname}/../src/messages.js`);
+const css: Buffer = fs.readFileSync(`${__dirname}/../client/chat.css`);
 
 const onRequest = (request: Http.IncomingMessage, response: Http.ServerResponse): void => {
     switch (request.url) {
@@ -27,6 +28,10 @@ const onRequest = (request: Http.IncomingMessage, response: Http.ServerResponse)
         case '/messages.js':
             response.writeHead(200, {'Content-Type': 'text/javascript'});
             response.write(messages);
+            return response.end();
+        case '/chat.css':
+            response.writeHead(200, {'Content-Type': 'text/css'});
+            response.write(css);
             return response.end();
         default:
             response.writeHead(404);
@@ -122,25 +127,47 @@ class User {
     private name: string;
     private room: string;
     private server: ChatServer;
+
     private lastActive: Date;
+    private isTyping: boolean;
+    private typingTimeout: Timer;
+
+    private static readonly TYPING_TIMEOUT_ELAPSED = 7000;
 
     constructor(socket: Socket, server: ChatServer) {
         this.server = server;
         this.socket = socket;
         this.lastActive = null;
+        this.isTyping = false;
 
         socket.on('join', this.onJoin.bind(this));
         socket.on('msg', this.onMsg.bind(this));
         socket.on('disconnect', this.onDisconnect.bind(this));
         socket.on('delivered', this.onDelivered.bind(this));
+        socket.on('userTyping', this.broadcastTyping.bind(this));
     }
 
     public getUserData(): Object {
         return {
+            isTyping: this.isTyping,
             lastActive: this.getElapsedInactive(),
             name: this.name,
             room: this.server.getRoom(),
         };
+    }
+
+    private broadcastTyping(): void {
+        this.isTyping = true;
+        this.server.broadcastStatus();
+
+        if (this.typingTimeout) {
+            clearTimeout(this.typingTimeout);
+        }
+
+        this.typingTimeout = setTimeout(() => {
+            this.isTyping = false;
+            this.server.broadcastStatus();
+        }, User.TYPING_TIMEOUT_ELAPSED);
     }
 
     /**
@@ -200,6 +227,7 @@ class User {
 
     private onMsg(data) {
         this.lastActive = new Date();
+        this.isTyping = false;
         console.log(`received message from ${this.name}`);
         const message =  new ClientMessage({msg: data.msg, clientId: data.clientId, name: this.name});
         server.sendMessage(message);

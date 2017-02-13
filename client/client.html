@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+	<link href="chat.css" type="text/css" rel="stylesheet">
     <!-- import the websocket client library. You can code websockets from scratch
          but we will just import a library. In this case we are using socket.io which is 
          one of the most popular and feature rich websocket libraries.
@@ -20,14 +21,18 @@
 	<script type="text/babel">
 
 		let autoIncrmentId = 0;
-		let user = '';
+		let localUser = '';
 		const sentMessages = {};
 		const messages = [];
 
 		function getMessageLine(message) {
-            const statusSymbols = [0, 'P','D','S','E'];
-            const status = message.name === user ? '(' + statusSymbols[message.status] + ')' : '';
-		    return `${message.name}: ${message.msg} ${status}\n`;
+            const statusSymbols = [null, 'P','D','S','E'];
+            const status = message.name === localUser ? '(' + statusSymbols[message.status] + ')' : '';
+
+			let classes = '';
+			classes += message.name === 'server' ? 'server' : '';
+
+		    return `<div class='message ${classes}'>${message.name}: ${message.msg} ${status}</div>`;
 		}
 
 		function getChatContent(messages) {
@@ -43,24 +48,27 @@
 
 		const connectedSocket = (e) => {
 			const message = document.querySelector('#message');
-			const chat = document.querySelector('#chat');
+			const chat = document.querySelector('#chat-content');
             const send = document.querySelector('#send');
+			const usersTypingMsg = document.querySelector('#users-typing');
 			const socket = io.connect();
 
 			const roomName = document.querySelector('#roomName');
 			const usersList = document.querySelector('#users');
 
+			let isTyping = false;
+
 			socket.on('connect', () => {
 				console.log('connecting');
 
 				const userField = document.querySelector('#username');
-				user = userField.value;
+				localUser = userField.value;
 
-				if(!user) {
-					user = 'unknown';
+				if(!localUser) {
+					localUser = 'unknown';
 				}
 
-				socket.emit('join', {name: user});
+				socket.emit('join', {name: localUser});
 				document.querySelector('#connect-container').style.display = 'none';
 				send.disabled = false;
 				message.disabled = false;
@@ -107,8 +115,7 @@
                     sentMessages[data.clientId].setStatus(MessageStatus.Delivered);
                     delete sentMessages[data.clientId];
                 }
-
-                console.log(messages);
+				
                 updateChat(chat, messages);
 			});
 
@@ -116,6 +123,7 @@
 				roomName.innerHTML = data.roomName;
 
 				usersList.innerHTML = '';
+				const usersTyping = [];
 				data.users.forEach((user) => {
 					const li = document.createElement('li');
 					const inactiveElapsed = user.lastActive === 'now' ? '' : `<span class='inactive-elapsed'>${user.lastActive}</span>`;
@@ -127,8 +135,14 @@
 						li.className += ' active';
 					}
 
+					if(user.isTyping && user.name !== localUser) {
+						usersTyping.push(user.name);
+					}
+
 					usersList.appendChild(li);
 				});
+
+				usersTypingMsg.innerHTML = usersTyping.length > 0 ? `${usersTyping.join(', ')} is typing...` : '';
 			});
 
 			const sendMessage = (e) => {
@@ -136,7 +150,7 @@
 
 				if(msg) {
 				    const newMessage = new ClientMessage({
-				        name: user,
+				        name: localUser,
 				        msg: msg,
 						clientId: autoIncrmentId++});
 
@@ -155,8 +169,15 @@
 
 			send.addEventListener('click', sendMessage);
 			message.addEventListener('keydown', function(e){
-			    if(e.which == 13) {
-			        sendMessage(e);
+				if(!isTyping) {
+					isTyping = true;
+					setTimeout(() => isTyping = false, 7000);
+					socket.emit('userTyping');
+				}
+
+				if(e.which == 13) {
+					sendMessage(e);
+					isTyping = false;
 				}
 			});
 		};
@@ -169,71 +190,6 @@
 		window.onload = init;
 
 	</script>
-	<style>
-		html, body {
-			font: 100% Arial, Sans;
-		}
-
-		#chat {
-			width: 40em;
-			height: 30em;
-			overflow-y: scroll;
-			border: 1px #ccc solid;
-			padding: .3em;
-			display: inline-block;
-			vertical-align: top;
-			margin: 0 0 .3em;
-		}
-
-		#message {
-			width: 35em;
-			padding: .3em;
-		}
-
-		#send {
-			width: 4em;
-			padding: .3em;
-		}
-
-		#status {
-			display: inline-block;
-			height: 20em;
-			width: 15em;
-			border: 1px #ccc solid;
-			padding: .3em;
-			vertical-align: top;
-		}
-
-		#roomName {
-			font-size: 1.2em;
-			margin: .3em;
-		}
-
-		#users {
-			padding: .3em;
-		}
-
-		#users li.user {
-			list-style: none;
-		}
-
-		li.user.active:after {
-			content: '';
-			background: #44ee44;
-			box-sizing: border-box;
-			display: inline-block;
-			vertical-align: middle;
-			height: .5em;
-			width: .5em;
-			border-radius: .5em;
-		}
-
-		.inactive-elapsed {
-			font-size: .8em;
-			color: #777;
-			margin-left: .5em;
-		}
-	</style>
 </head>
 <body>
 <div id="connect-container">
@@ -241,13 +197,16 @@
 	<input id="username" name="user" type="text"/>
 	<input id="connect" type='button' value='connect'/>
 </div>
-<pre id="chat"></pre>
+<div id="chat">
+	<div id="chat-content"></div>
+	<div id="users-typing"></div>
+</div>
 <div id="status">
 	<h3 id="roomName"></h3>
 	<ul id="users"></ul>
 </div>
 <div>
-	<input id="message" name="message" type="text" disabled placeholder="Type a message..."/>
+	<input id="message" name="message" type="text" autocomplete="false" disabled placeholder="Type a message..."/>
 	<input id="send" type="button" value="send" disabled />
 </div>
 </body>
