@@ -235,9 +235,15 @@ class User {
         this.isTyping = false;
         console.log(`received message from ${this.name}`);
         const message =  new ClientMessage({msg: data.msg, clientId: data.clientId, name: this.name});
+
+        // If there's no other users when the message is sent, it will never get delivered
+        // This will causes bugs on the client
+        if (this.server.getUserCount() < 2) {
+            message.setStatus(MessageStatus.Delivered);
+            this.socket.emit('delivered', message);
+        }
+
         server.sendMessage(message);
-        // this.socket.broadcast.to(this.server.getRoom()).emit('msg', message);
-        // this.socket.emit('msg', message);
     }
 
     private onDisconnect(data) {
