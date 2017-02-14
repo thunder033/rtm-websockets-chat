@@ -128,6 +128,8 @@ class ChatServer {
 
 class User {
 
+    private static readonly TYPING_TIMEOUT_ELAPSED = 7000;
+
     private socket: Socket;
     private name: string;
     private room: string;
@@ -136,8 +138,6 @@ class User {
     private lastActive: Date;
     private isTyping: boolean;
     private typingTimeout: Timer;
-
-    private static readonly TYPING_TIMEOUT_ELAPSED = 7000;
 
     constructor(socket: Socket, server: ChatServer) {
         this.server = server;
