@@ -17,6 +17,7 @@ const port: number = parseInt(process.env.PORT || process.env.NODE_PORT || 3000,
 const index: Buffer = fs.readFileSync(`${__dirname}/../client/client.html`);
 const messages: Buffer = fs.readFileSync(`${__dirname}/../src/messages.js`);
 const css: Buffer = fs.readFileSync(`${__dirname}/../client/chat.css`);
+const favicon: Buffer = fs.readFileSync(`${__dirname}/../client/favicon.ico`);
 
 const onRequest = (request: Http.IncomingMessage, response: Http.ServerResponse): void => {
     switch (request.url) {
@@ -32,6 +33,10 @@ const onRequest = (request: Http.IncomingMessage, response: Http.ServerResponse)
         case '/chat.css':
             response.writeHead(200, {'Content-Type': 'text/css'});
             response.write(css);
+            return response.end();
+        case '/favicon.ico':
+            response.writeHead(200, {'Content-Type': 'image/x-icon'});
+            response.write(favicon);
             return response.end();
         default:
             response.writeHead(404);

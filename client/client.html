@@ -1,7 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+	<title>Basically Messenger</title>
+	<meta name="description" content="It's basically Messenger at this point">
 	<link href="chat.css" type="text/css" rel="stylesheet">
+	<link href="favicon.ico" type="image/x-icon" rel="icon">
     <!-- import the websocket client library. You can code websockets from scratch
          but we will just import a library. In this case we are using socket.io which is 
          one of the most popular and feature rich websocket libraries.
@@ -70,6 +73,7 @@
 
 				socket.emit('join', {name: localUser});
 				document.querySelector('#connect-container').style.display = 'none';
+				document.querySelector('#connect-overlay').style.display = 'none';
 				send.disabled = false;
 				message.disabled = false;
 			});
@@ -115,11 +119,11 @@
                     sentMessages[data.clientId].setStatus(MessageStatus.Delivered);
                     delete sentMessages[data.clientId];
                 }
-				
+
                 updateChat(chat, messages);
 			});
 
-			socket.on('status', (data) =>{
+			socket.on('status', (data) => {
 				roomName.innerHTML = data.roomName;
 
 				usersList.innerHTML = '';
@@ -185,6 +189,11 @@
 		const init = () => {
 			const connect = document.querySelector('#connect');
 			connect.addEventListener('click', connectedSocket);
+
+			document.querySelector('#users-toggle').onclick = function(e) {
+				const status = document.querySelector('#status');
+				status.className = status.className === 'visible' ? '' : 'visible';
+			}
 		};
 
 		window.onload = init;
@@ -192,9 +201,13 @@
 	</script>
 </head>
 <body>
+<header id="chat-header">
+	<button id="users-toggle" title="Users">&#9786;</button>
+	<h3 id="roomName"></h3>
+</header>
+<div id="connect-overlay"></div>
 <div id="connect-container">
-	<label for="username">Username:</label>
-	<input id="username" name="user" type="text"/>
+	<input id="username" placeholder="Username" name="user" type="text"/>
 	<input id="connect" type='button' value='connect'/>
 </div>
 <div id="chat">
@@ -202,12 +215,14 @@
 	<div id="users-typing"></div>
 </div>
 <div id="status">
-	<h3 id="roomName"></h3>
 	<ul id="users"></ul>
 </div>
-<div>
-	<input id="message" name="message" type="text" autocomplete="false" disabled placeholder="Type a message..."/>
-	<input id="send" type="button" value="send" disabled />
+<div class="message-form">
+	<button id="send" type="button" disabled><span>Send</span></button>
+	<div class="message-input-wrapper">
+		<input id="message" name="message" type="text" autocomplete="false" disabled placeholder="Type a message..."/>
+	</div>
+
 </div>
 </body>
 </html>

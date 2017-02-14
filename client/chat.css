@@ -1,29 +1,85 @@
 html, body {
     font: 100% Arial, Sans;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+}
+
+#connect-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 30em;
+    height: 5em;
+    background: #fff;
+    padding: 1em;
+    z-index: 510;
+    margin: -2.5em 0 0 -15em;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+#connect-overlay {
+    background: #000;
+    opacity: .45;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 500;
+}
+
+#connect-overlay input, #connect-overlay button {
+    padding: .3em;
+}
+
+#chat-header {
+    background: #319;
+    height: 2.5em;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 10;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#users-toggle {
+    float: right;
+    color: #fff;
+    background: transparent;
+    font-weight: bold;
+    font-size: 2em;
+    border: 0;
 }
 
 #chat {
-    width: 40em;
-    height: 30em;
+    width: 100%;
+    height: 100%;
     display: inline-block;
     vertical-align: top;
-    margin: 0 0 .3em;
+    margin: 0;
     position: relative;
     border: 1px #ccc solid;
-    padding-bottom: 1em;
+    padding: 2.5em 0 3.5em;
+    box-sizing: border-box;
+    max-width: 50em;
 }
 
 #chat-content {
     width: 100%;
-    height: 30em;
+    height: 100%;
     overflow-y: scroll;
     padding: .3em .3em 0;
     box-sizing: border-box;
 }
 
 #users-typing {
-    position: absolute;
-    bottom: 0;
+    position: fixed;
+    bottom: 2.5em;
     left: 0;
     padding: .3em;
     font-size: .8em;
@@ -42,28 +98,75 @@ html, body {
     color: #333;
 }
 
+.message-form {
+    width: 100%;
+    max-width: 50em;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    border-top: 1px #319 solid;
+}
+
+.message-input-wrapper {
+    margin-right: 4em;
+    font-size: 1em;
+    overflow: hidden;
+}
+
 #message {
-    width: 38em;
-    padding: .3em;
+    width: 100%;
+    padding: .5em .3em;
+    margin-right: 5em;
+    box-sizing: border-box;
+    font-size: 1em;
+    border: 0;
+}
+
+#message:active,
+#message:focus,
+#send:focus,
+#send:active {
+    outline: none;
 }
 
 #send {
+    float: right;
     width: 4em;
-    padding: .3em;
+    padding: .5em .3em;
+    font-size: 1em;
+    border: 0;
+    background: #fff;
+    color: #95f;
+    font-weight: bold;
+    transition: all .15s;
+    cursor: pointer;
+}
+
+#send span {
+    display: inline-block;
+}
+
+#send:hover span {
+    transform: scale(1.05);
+    transition: all .15s;
 }
 
 #status {
     display: inline-block;
-    height: 20em;
+    height: 100%;
     width: 15em;
     border: 1px #ccc solid;
-    padding: .3em;
+    padding: 2.5em .3em .3em;
     vertical-align: top;
+    box-sizing: border-box;
+    margin: 0 -.3em;
+    background: #ffffff;
 }
 
 #roomName {
     font-size: 1.2em;
     margin: .3em;
+    color: #eee;
 }
 
 #users {
@@ -89,4 +192,20 @@ li.user.active:after {
     font-size: .8em;
     color: #777;
     margin-left: .5em;
+}
+
+@media screen and (min-width: 65em) {
+    #users-toggle {
+        display: none;
+    }
+}
+
+@media screen and (max-width: 65em) {
+    #status.visible {
+        position: fixed;
+        top: 0;
+        right: 0;
+        z-index: 8;
+        box-shadow: -2px 0 2px rgba(0,0,0,.5);
+    }
 }
